@@ -24,9 +24,6 @@ jobs:
       - name: Download web resources
         run: python3 _download_web.py
 
-      - name: Download data
-        run: python3 _download_data.py
-
       # 启动 HTTP 服务器（后台运行）
       - name: Start HTTP server
         run: |
