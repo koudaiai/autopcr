@@ -1,0 +1,37 @@
+name: Run HTTP Server (Manual)
+
+on:
+  workflow_dispatch:   # 手动触发，运行时可在界面选择分支
+
+jobs:
+  run-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出代码（使用你选择的分支）
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 设置 Python 3.10 环境
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 3. 安装项目依赖（requirements.txt）
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 4. 下载前端资源（web 文件）
+      - name: Download web resources
+        run: python3 _download_web.py
+
+      # 5. 下载游戏数据（data 文件）
+      - name: Download data
+        run: python3 _download_data.py
+
+      # 6. 启动 HTTP 服务器
+      - name: Run HTTP server
+        run: python3 _httpserver_test.py
