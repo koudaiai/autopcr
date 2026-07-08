@@ -28,10 +28,6 @@ jobs:
       - name: Download web resources
         run: python3 _download_web.py
 
-      # 5. 下载游戏数据（data 文件）
-      - name: Download data
-        run: python3 _download_data.py
-
       # 6. 启动 HTTP 服务器
       - name: Run HTTP server
         run: python3 _httpserver_test.py
