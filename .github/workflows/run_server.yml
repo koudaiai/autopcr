@@ -1,33 +1,58 @@
-name: Run HTTP Server (Manual)
+name: Run HTTP Server with ngrok
 
 on:
-  workflow_dispatch:   # 手动触发，运行时可在界面选择分支
+  workflow_dispatch:   # 手动触发，可选择分支
 
 jobs:
   run-server:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 检出代码（使用你选择的分支）
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. 设置 Python 3.10 环境
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # 3. 安装项目依赖（requirements.txt）
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 4. 下载前端资源（web 文件）
       - name: Download web resources
         run: python3 _download_web.py
 
-      # 6. 启动 HTTP 服务器
-      - name: Run HTTP server
-        run: python3 _httpserver_test.py
+      - name: Download data
+        run: python3 _download_data.py
+
+      # 启动 HTTP 服务器（后台运行）
+      - name: Start HTTP server
+        run: |
+          export AUTOPCR_SERVER_HOST=0.0.0.0
+          export AUTOPCR_SERVER_PORT=8080   # 根据实际修改
+          python3 _httpserver_test.py &
+        # 将服务器进程放到后台，以便后续启动 ngrok
+
+      # 安装并启动 ngrok（暴露 8080 端口）
+      - name: Start ngrok tunnel
+        run: |
+          # 下载 ngrok
+          curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt update && sudo apt install ngrok
+
+          # 需要 ngrok 认证令牌，请在仓库 Secrets 中设置 NGROK_AUTHTOKEN
+          ngrok config add-authtoken ${{ secrets.NGROK_AUTHTOKEN }}
+
+          # 启动 ngrok，转发 8080 端口
+          ngrok http 8080 &
+          sleep 5
+          # 获取公网 URL 并显示
+          curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
+          echo "请使用上述 URL 访问"
+          # 保持工作流运行（服务器和 ngrok 都在后台）
+          wait
+        env:
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}   # 需要在 GitHub Secrets 中配置
